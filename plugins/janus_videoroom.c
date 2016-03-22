@@ -314,7 +314,7 @@ static void janus_videoroom_free(janus_videoroom *room);
 
 typedef struct janus_videoroom_session {
 	janus_plugin_session *handle;
-	janus_videoroom_p_type participant_type;
+    janus_videoroom_p_type participant_type;
 	gpointer participant;
 	gboolean started;
 	gboolean stopping;
@@ -2199,16 +2199,38 @@ void janus_videoroom_incoming_data(janus_plugin_session *handle, char *buf, int 
 	if(buf == NULL || len <= 0)
 		return;
 	janus_videoroom_session *session = (janus_videoroom_session *)handle->plugin_handle;
-	if(!session || session->destroyed || !session->participant || session->participant_type != janus_videoroom_p_type_publisher)
+	if(!session || session->destroyed || !session->participant)
 		return;
-	janus_videoroom_participant *participant = (janus_videoroom_participant *)session->participant;
 	/* Get a string out of the data */
 	char *text = g_malloc0(len+1);
 	memcpy(text, buf, len);
 	*(text+len) = '\0';
 	JANUS_LOG(LOG_VERB, "Got a DataChannel message (%zu bytes) to forward: %s\n", strlen(text), text);
-	g_slist_foreach(participant->listeners, janus_videoroom_relay_data_packet, text);
-	g_free(text);
+    if(session->participant_type == janus_videoroom_p_type_publisher) {
+        janus_videoroom_participant *participant = ( janus_videoroom_participant *) session->participant;
+        if(participant && participant->listeners) {
+            g_slist_foreach(participant->listeners, janus_videoroom_relay_data_packet, text);
+        }
+    }else if(session->participant_type == janus_videoroom_p_type_subscriber) {
+        janus_videoroom_listener *current_listener = (janus_videoroom_listener *) session->participant;
+        janus_videoroom_participant *participant = (janus_videoroom_participant *)current_listener->feed;
+        gateway->relay_data(participant->session->handle, text, strlen(text));
+        /* we need to check if the room still exists, may have been destroyed already */
+        if(participant != NULL && participant->listeners) {
+            GSList *ps = participant->listeners;
+            while(ps) {
+                janus_videoroom_listener *l = (janus_videoroom_listener *)ps->data;
+                if(l && l->session && current_listener->session && l->session != current_listener->session){
+                    if(!l->session->destroyed)
+                        gateway->relay_data(l->session->handle, text, strlen(text));
+                }
+                ps = ps->next;
+            }
+        }
+    }else if(session->participant_type == janus_videoroom_p_type_subscriber_muxed){
+        //Not implemented
+    }
+    g_free(text);
 }
 
 void janus_videoroom_slow_link(janus_plugin_session *handle, int uplink, int video) {
