@@ -472,7 +472,7 @@ typedef struct janus_videoroom_rtp_relay_packet {
 #define sdp_d_template \
 		"m=application 1 DTLS/SCTP 5000\r\n" \
 		"c=IN IP4 1.1.1.1\r\n" \
-		"a=sctpmap:5000 webrtc-datachannel 16\r\n"
+		"a=sctpmap:5000 webrtc-datachannel 1024\r\n"
 
 
 /* Error codes */
