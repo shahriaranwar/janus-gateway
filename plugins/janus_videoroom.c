@@ -2222,8 +2222,9 @@ void janus_videoroom_incoming_data(janus_plugin_session *handle, char *buf, int 
             while(ps) {
                 janus_videoroom_listener *l = (janus_videoroom_listener *)ps->data;
                 if(l && l->session && current_listener->session && l->session != current_listener->session){
-                    if(!l->session->destroyed)
-                        gateway->relay_data(l->session->handle, text, strlen(text));
+                    if(!l->session->destroyed) {
+						gateway->relay_data(l->session->handle, text, strlen(text));
+					}
                 }
                 ps = ps->next;
             }
