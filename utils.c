@@ -201,10 +201,9 @@ int janus_mkdir(const char *dir, mode_t mode) {
 	return 0;
 }
 
-char *normalize_filename(char const *filename){
+char *normalize_filename(char *filename){
 	char *outgoing = filename;
 	size_t len,i;
-	len = strlen(filename);
 	for(i=0; filename[i] ; i++){
 		if( filename[i] == ' '){
 			outgoing[i] = '-';
