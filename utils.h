@@ -92,6 +92,8 @@ gboolean janus_flags_is_set(janus_flags *flags, uint32_t flag);
  * @note A failure may indicate that creating any of the subdirectories failed: some may still have been created */
 int janus_mkdir(const char *dir, mode_t mode);
 
+char *normalize_filename(char const *filename);
+
 /*! \brief Ugly and dirty helper to quickly get the payload type associated with a codec in an SDP
  * @param sdp The SDP to parse
  * @param codec The codec to look for

@@ -201,6 +201,21 @@ int janus_mkdir(const char *dir, mode_t mode) {
 	return 0;
 }
 
+char *normalize_filename(char const *filename){
+	char *outgoing = message;
+	size_t len,i;
+	len = strlen(filename);
+	for(i=0; filename[i] ; i++){
+		if( filename[i] == ' '){
+			outgoing[i] = '-';
+		}else if( isupper( filename[i] ) ){
+			outgoing[i] = tolower( filename[i] );
+		}
+	}
+	outgoing[i] = '\0';
+	return outgoing;
+}
+
 int janus_get_codec_pt(const char *sdp, const char *codec) {
 	if(!sdp || !codec)
 		return -1;
