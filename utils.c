@@ -202,7 +202,7 @@ int janus_mkdir(const char *dir, mode_t mode) {
 }
 
 char *normalize_filename(char const *filename){
-	char *outgoing = message;
+	char *outgoing = filename;
 	size_t len,i;
 	len = strlen(filename);
 	for(i=0; filename[i] ; i++){
