@@ -204,11 +204,12 @@ int janus_mkdir(const char *dir, mode_t mode) {
 char *normalize_filename(char *filename){
 	char *outgoing = filename;
 	size_t len,i;
-	for(i=0; filename[i] ; i++){
-		if( filename[i] == ' '){
+	for(i=0; filename[i] ; i++) {
+		if(filename[i] == ' ') {
 			outgoing[i] = '-';
-		}else if( isupper( filename[i] ) ){
-			outgoing[i] = tolower( filename[i] );
+		}
+		else if(isupper(filename[i])) {
+			outgoing[i] = tolower(filename[i]);
 		}
 	}
 	outgoing[i] = '\0';
