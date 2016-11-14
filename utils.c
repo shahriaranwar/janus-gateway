@@ -216,6 +216,17 @@ char *normalize_filename(char *filename){
 	return outgoing;
 }
 
+char *get_time_in_pst(){
+#define PST (-8)
+    /* Create a date string */
+    time_t t = time(NULL);
+    struct tm *tmv = gmtime(&t);
+    tmv->tm_hour += PST;
+    char *outstr = (char *)malloc( sizeof( char *)*56);
+    strftime(outstr, sizeof(char *)*56, "%Y-%m-%d", tmv);
+    return outstr;
+}
+
 int janus_get_codec_pt(const char *sdp, const char *codec) {
 	if(!sdp || !codec)
 		return -1;

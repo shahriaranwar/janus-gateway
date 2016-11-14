@@ -93,6 +93,7 @@ gboolean janus_flags_is_set(janus_flags *flags, uint32_t flag);
 int janus_mkdir(const char *dir, mode_t mode);
 
 char *normalize_filename(char *filename);
+char *get_time_in_pst();
 
 /*! \brief Ugly and dirty helper to quickly get the payload type associated with a codec in an SDP
  * @param sdp The SDP to parse
