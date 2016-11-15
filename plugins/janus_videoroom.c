@@ -2227,6 +2227,7 @@ void janus_videoroom_slow_link(janus_plugin_session *handle, int uplink, int vid
 
 static void janus_videoroom_recorder_create(janus_videoroom_participant *participant, gboolean audio, gboolean video) {
 	char filename[255];
+    const char *rec_dir = get_time_in_pst();
 	gint64 now = janus_get_real_time();
 	if(audio) {
 		memset(filename, 0, 255);
@@ -2245,7 +2246,7 @@ static void janus_videoroom_recorder_create(janus_videoroom_participant *partici
 
 			g_snprintf(filename, 255, "audio-%"SCNu64"-%s",participant->room->room_id, normalize_filename(participant->display));
 
-			participant->arc = janus_recorder_create(participant->room->rec_dir,
+			participant->arc = janus_recorder_create(rec_dir,
 				janus_videoroom_audiocodec_name(participant->room->acodec), filename);
 			if(participant->arc == NULL) {
 				JANUS_LOG(LOG_ERR, "Couldn't open an audio recording file for this publisher!\n");
@@ -2269,7 +2270,7 @@ static void janus_videoroom_recorder_create(janus_videoroom_participant *partici
 
 			g_snprintf(filename, 255, "video-%"SCNu64"-%s",participant->room->room_id, normalize_filename(participant->display));
 
-			participant->vrc = janus_recorder_create(participant->room->rec_dir,
+			participant->vrc = janus_recorder_create(rec_dir,
 				janus_videoroom_videocodec_name(participant->room->vcodec), filename);
 			if(participant->vrc == NULL) {
 				JANUS_LOG(LOG_ERR, "Couldn't open an video recording file for this publisher!\n");
