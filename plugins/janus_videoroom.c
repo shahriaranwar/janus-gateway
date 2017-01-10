@@ -307,6 +307,9 @@ typedef enum janus_videoroom_p_type {
 	janus_videoroom_p_type_publisher,			/* Participant/publisher */
 } janus_videoroom_p_type;
 
+/* JSON serialization options */
+static size_t json_format = JSON_INDENT(3) | JSON_PRESERVE_ORDER;
+
 typedef struct janus_videoroom_message {
 	janus_plugin_session *handle;
 	char *transaction;
@@ -2201,7 +2204,6 @@ void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char 
 	if(videoroom == NULL) {
 		janus_mutex_unlock(&rooms_mutex);
 		JANUS_LOG(LOG_ERR, "No such room (%"SCNu64")\n", room_id);
-		g_snprintf(error_cause, 512, "No such room (%"SCNu64")", room_id);
 		goto error;
 	}
 	janus_mutex_unlock(&rooms_mutex);
@@ -4161,7 +4163,7 @@ static void janus_videoroom_relay_rtp_packet(gpointer data, gpointer user_data) 
 	return;
 }
 
-static void janus_videoroom_relay_data_packet(gpointer data, gpointer user_data) {
+/*static void janus_videoroom_relay_data_packet(gpointer data, gpointer user_data) {
 	char *text = (char *)user_data;
 	janus_videoroom_listener *listener = (janus_videoroom_listener *)data;
 	if(!listener || !listener->session || !listener->data || listener->paused) {
@@ -4179,7 +4181,7 @@ static void janus_videoroom_relay_data_packet(gpointer data, gpointer user_data)
 		gateway->relay_data(session->handle, text, strlen(text));
 	}
 	return;
-}
+}*/
 
 /* Helper to free janus_videoroom structs. */
 static void janus_videoroom_free(janus_videoroom *room) {
