@@ -307,9 +307,6 @@ typedef enum janus_videoroom_p_type {
 	janus_videoroom_p_type_publisher,			/* Participant/publisher */
 } janus_videoroom_p_type;
 
-/* JSON serialization options */
-static size_t json_format = JSON_INDENT(3) | JSON_PRESERVE_ORDER;
-
 typedef struct janus_videoroom_message {
 	janus_plugin_session *handle;
 	char *transaction;
