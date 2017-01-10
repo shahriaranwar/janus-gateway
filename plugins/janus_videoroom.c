@@ -2234,10 +2234,17 @@ void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char 
             gateway->relay_data(p->session->handle, msg_text, strlen(msg_text));
         }
     }
+    free(msg_text);
 	janus_mutex_unlock(&videoroom->participants_mutex);
 
     json_decref(root);
     return;
+
+error:
+    {
+        if(root != NULL)
+            json_decref(root);
+    }
 }
 
 void janus_videoroom_slow_link(janus_plugin_session *handle, int uplink, int video) {
