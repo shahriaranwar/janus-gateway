@@ -740,6 +740,7 @@ void *janus_videoroom_watchdog(void *data) {
 	return NULL;
 }
 
+void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char *text, gboolean internal);
 
 /* Plugin implementation */
 int janus_videoroom_init(janus_callbacks *callback, const char *config_path) {
@@ -2165,16 +2166,78 @@ void janus_videoroom_incoming_data(janus_plugin_session *handle, char *buf, int 
 	if(buf == NULL || len <= 0)
 		return;
 	janus_videoroom_session *session = (janus_videoroom_session *)handle->plugin_handle;
-	if(!session || session->destroyed || !session->participant || session->participant_type != janus_videoroom_p_type_publisher)
-		return;
-	janus_videoroom_participant *participant = (janus_videoroom_participant *)session->participant;
+	if(!session) {
+        JANUS_LOG(LOG_ERR, "No session associated with this handle...\n");
+        return;
+    }
+    if(session->destroyed)
+        return;
+    if(buf == NULL || len <= 0)
+        return;
 	/* Get a string out of the data */
 	char *text = g_malloc0(len+1);
 	memcpy(text, buf, len);
 	*(text+len) = '\0';
 	JANUS_LOG(LOG_VERB, "Got a DataChannel message (%zu bytes) to forward: %s\n", strlen(text), text);
-	g_slist_foreach(participant->listeners, janus_videoroom_relay_data_packet, text);
-	g_free(text);
+    janus_videoroom_handle_incoming_request(handle,text,FALSE);
+}
+
+/* Helper method to handle incoming messages from the data channel */
+void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char *text, gboolean internal) {
+    janus_videoroom_session *session = (janus_videoroom_session *)handle->plugin_handle;
+    /* Parse JSON */
+    json_error_t error;
+    json_t *root = json_loads(text, 0, &error);
+    g_free(text);
+    if(!root) {
+        JANUS_LOG(LOG_ERR, "Error parsing data channel message (JSON error: on line %d: %s)\n", error.line, error.text);
+        return;
+    }
+	/* Handle request */
+	int error_code = 0;
+	json_t *room = json_object_get(root, "room");
+	guint64 room_id = json_integer_value(room);
+	janus_mutex_lock(&rooms_mutex);
+	janus_videoroom *videoroom = g_hash_table_lookup(rooms, &room_id);
+	if(videoroom == NULL) {
+		janus_mutex_unlock(&rooms_mutex);
+		JANUS_LOG(LOG_ERR, "No such room (%"SCNu64")\n", room_id);
+		error_code = JANUS_VIDEOROOM_ERROR_NO_SUCH_ROOM;
+		g_snprintf(error_cause, 512, "No such room (%"SCNu64")", room_id);
+		goto error;
+	}
+	janus_mutex_unlock(&rooms_mutex);
+
+
+    json_t *event = json_object_get(root, "event");
+    const char *message = json_string_value(event);
+    /* Prepare outgoing message */
+    json_t *msg = json_object();
+    json_object_set_new(msg, "videoroom", json_string("event"));
+    json_object_set_new(msg, "room", json_integer(room_id));
+    json_object_set_new(msg, "what", json_string(message));
+    char *msg_text = json_dumps(msg, json_format);
+    json_decref(msg);
+
+    /* Everybody in the room */
+	janus_mutex_lock(&videoroom->participants_mutex);
+    if(videoroom->participants) {
+        GHashTableIter iter;
+        gpointer value;
+        g_hash_table_iter_init(&iter, videoroom->participants);
+        while(!videoroom->destroyed && g_hash_table_iter_next(&iter, NULL, &value)) {
+            janus_videoroom_participant *p = value;
+            if(p == session->participant ) {
+                continue;	/* Skip the new publisher itself */
+            }
+            JANUS_LOG(LOG_VERB, "  >> To %s in %"SCNu64"\n", p->display, room_id);
+            gateway->relay_data(p->session->handle, msg_text, strlen(msg_text));
+        }
+    }
+	janus_mutex_unlock(&videoroom->participants_mutex);
+
+    json_decref(root);
+    return;
 }
 
 void janus_videoroom_slow_link(janus_plugin_session *handle, int uplink, int video) {
