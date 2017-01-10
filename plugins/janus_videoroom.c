@@ -4123,7 +4123,7 @@ static void janus_videoroom_relay_rtp_packet(gpointer data, gpointer user_data) 
 	return;
 }
 
-/*static void janus_videoroom_relay_data_packet(gpointer data, gpointer user_data) {
+static void janus_videoroom_relay_data_packet(gpointer data, gpointer user_data) {
 	char *text = (char *)user_data;
 	janus_videoroom_listener *listener = (janus_videoroom_listener *)data;
 	if(!listener || !listener->session || !listener->data || listener->paused) {
@@ -4141,7 +4141,7 @@ static void janus_videoroom_relay_rtp_packet(gpointer data, gpointer user_data) 
 		gateway->relay_data(session->handle, text, strlen(text));
 	}
 	return;
-}*/
+}
 
 /* Helper to free janus_videoroom structs. */
 static void janus_videoroom_free(janus_videoroom *room) {
