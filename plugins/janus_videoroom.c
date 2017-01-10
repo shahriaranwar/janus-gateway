@@ -2192,6 +2192,8 @@ void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char 
     json_error_t error;
     json_t *root = json_loads(text, 0, &error);
     g_free(text);
+
+    JANUS_LOG(LOG_VERB, "  >> %s\n", "CUSTOM LOG 1");
     if(!root) {
         JANUS_LOG(LOG_ERR, "Error parsing data channel message (JSON error: on line %d: %s)\n", error.line, error.text);
         return;
@@ -2218,6 +2220,7 @@ void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char 
     json_object_set_new(msg, "what", json_string(message));
     char *msg_text = json_dumps(msg, json_format);
     json_decref(msg);
+    JANUS_LOG(LOG_VERB, "  >> %s\n", "CUSTOM LOG 2");
 
     /* Everybody in the room */
 	janus_mutex_lock(&videoroom->participants_mutex);
@@ -2225,11 +2228,14 @@ void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char 
         GHashTableIter iter;
         gpointer value;
         g_hash_table_iter_init(&iter, videoroom->participants);
+        JANUS_LOG(LOG_VERB, "  >> %s\n", "CUSTOM LOG 3");
         while(!videoroom->destroyed && g_hash_table_iter_next(&iter, NULL, &value)) {
             janus_videoroom_participant *p = value;
             if(p == session->participant ) {
+                JANUS_LOG(LOG_VERB, "  >> %s\n", "CUSTOM LOG 4");
                 continue;	/* Skip the new publisher itself */
             }
+            JANUS_LOG(LOG_VERB, "  >> %s\n", "CUSTOM LOG 5");
             JANUS_LOG(LOG_VERB, "  >> To %s in %"SCNu64"\n", p->display, room_id);
             gateway->relay_data(p->session->handle, msg_text, strlen(msg_text));
         }
