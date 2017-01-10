@@ -2194,7 +2194,6 @@ void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char 
         return;
     }
 	/* Handle request */
-	int error_code = 0;
 	json_t *room = json_object_get(root, "room");
 	guint64 room_id = json_integer_value(room);
 	janus_mutex_lock(&rooms_mutex);
@@ -2202,7 +2201,6 @@ void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char 
 	if(videoroom == NULL) {
 		janus_mutex_unlock(&rooms_mutex);
 		JANUS_LOG(LOG_ERR, "No such room (%"SCNu64")\n", room_id);
-		error_code = JANUS_VIDEOROOM_ERROR_NO_SUCH_ROOM;
 		g_snprintf(error_cause, 512, "No such room (%"SCNu64")", room_id);
 		goto error;
 	}
