@@ -1958,6 +1958,21 @@ void janus_videoroom_setup_media(janus_plugin_session *handle) {
 			}
 			json_decref(pub);
 			janus_mutex_unlock(&videoroom->participants_mutex);
+
+            /* Notify others */
+            if(participant->listeners && participant->room) {
+                json_t *reply = json_object();
+                json_object_set_new(reply, "event", json_string("published"));
+                json_object_set_new(reply, "transaction", json_string("internal"));
+                json_object_set_new(reply, "room", json_integer(participant->room->room_id));
+                json_object_set_new(reply, "id", json_integer(participant->user_id));
+
+                char *reply_text = json_dumps(reply, json_format);
+                json_decref(reply);
+                g_slist_foreach(participant->listeners, janus_videoroom_relay_data_packet, reply_text);
+                free(reply_text);
+            }
+
 			/* Also notify event handlers */
 			if(notify_events && gateway->events_is_enabled()) {
 				json_t *info = json_object();
@@ -2176,41 +2191,6 @@ void janus_videoroom_incoming_data(janus_plugin_session *handle, char *buf, int 
     g_free(text);
 }
 
-/*void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char *text, gboolean internal);
-*//* Helper method to handle incoming messages from the data channel *//*
-void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char *text, gboolean internal) {
-    janus_videoroom_session *session = (janus_videoroom_session *)handle->plugin_handle;
-    if(!session || session->destroyed || !session->participant)
-        return;
-
-    if(session->participant_type == janus_videoroom_p_type_publisher) {
-        janus_videoroom_participant *participant = ( janus_videoroom_participant *) session->participant;
-        if(participant && participant->listeners) {
-            g_slist_foreach(participant->listeners, janus_videoroom_relay_data_packet, text);
-        }
-    }else if(session->participant_type == janus_videoroom_p_type_subscriber) {
-        janus_videoroom_listener *current_listener = (janus_videoroom_listener *) session->participant;
-        janus_videoroom_participant *participant = (janus_videoroom_participant *)current_listener->feed;
-        gateway->relay_data(participant->session->handle, text, strlen(text));
-        *//* we need to check if the room still exists, may have been destroyed already *//*
-        if(participant->room && !participant->room->destroyed && participant != NULL && participant->listeners) {
-            GSList *ps = participant->listeners;
-            while(ps) {
-                janus_videoroom_listener *l = (janus_videoroom_listener *)ps->data;
-                if(l && l->session && current_listener->session && l->session != current_listener->session){
-                    if(!l->session->destroyed) {
-                        gateway->relay_data(l->session->handle, text, strlen(text));
-                    }
-                }
-                ps = ps->next;
-            }
-        }
-    }else if(session->participant_type == janus_videoroom_p_type_subscriber_muxed){
-        //Not implemented
-    }
-    g_free(text);
-}*/
-
 void janus_videoroom_slow_link(janus_plugin_session *handle, int uplink, int video) {
 	/* The core is informing us that our peer got too many NACKs, are we pushing media too hard? */
 	if(handle == NULL || handle->stopped || g_atomic_int_get(&stopping) || !g_atomic_int_get(&initialized) || !gateway)
@@ -2349,8 +2329,8 @@ void janus_videoroom_hangup_media(janus_plugin_session *handle) {
 		participant->fir_latest = 0;
 		participant->fir_seq = 0;
 
+        /* Notify others */
         if(participant->listeners && participant->room) {
-            /* Notify others */
             json_t *reply = json_object();
             json_object_set_new(reply, "event", json_string("unpublish"));
             json_object_set_new(reply, "transaction", json_string("internal"));
