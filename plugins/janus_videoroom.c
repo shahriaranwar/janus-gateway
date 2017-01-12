@@ -307,6 +307,9 @@ typedef enum janus_videoroom_p_type {
 	janus_videoroom_p_type_publisher,			/* Participant/publisher */
 } janus_videoroom_p_type;
 
+/* JSON serialization options */
+static size_t json_format = JSON_INDENT(3) | JSON_PRESERVE_ORDER;
+
 typedef struct janus_videoroom_message {
 	janus_plugin_session *handle;
 	char *transaction;
@@ -2296,9 +2299,6 @@ static void janus_videoroom_recorder_close(janus_videoroom_participant *particip
 	}
 	participant->vrc = NULL;
 }
-
-/* JSON serialization options */
-static size_t json_format = JSON_INDENT(3) | JSON_PRESERVE_ORDER;
 
 void janus_videoroom_hangup_media(janus_plugin_session *handle) {
 	JANUS_LOG(LOG_INFO, "No WebRTC media anymore\n");
