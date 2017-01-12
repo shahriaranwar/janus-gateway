@@ -740,8 +740,6 @@ void *janus_videoroom_watchdog(void *data) {
 	return NULL;
 }
 
-void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char *text, gboolean internal);
-
 /* Plugin implementation */
 int janus_videoroom_init(janus_callbacks *callback, const char *config_path) {
 	if(g_atomic_int_get(&stopping)) {
@@ -2161,24 +2159,30 @@ void janus_videoroom_incoming_rtcp(janus_plugin_session *handle, int video, char
 }
 
 void janus_videoroom_incoming_data(janus_plugin_session *handle, char *buf, int len) {
-	if(handle == NULL || handle->stopped || g_atomic_int_get(&stopping) || !g_atomic_int_get(&initialized) || !gateway)
-		return;
-	if(buf == NULL || len <= 0)
-		return;
-	janus_videoroom_session *session = (janus_videoroom_session *)handle->plugin_handle;
-    if(!session || session->destroyed || !session->participant)
+    if(handle == NULL || handle->stopped || g_atomic_int_get(&stopping) || !g_atomic_int_get(&initialized) || !gateway)
         return;
-	/* Get a string out of the data */
-	char *text = g_malloc0(len+1);
-	memcpy(text, buf, len);
-	*(text+len) = '\0';
-	JANUS_LOG(LOG_VERB, "Got a DataChannel message (%zu bytes) to forward: %s\n", strlen(text), text);
-    janus_videoroom_handle_incoming_request(handle,text,FALSE);
+    if(buf == NULL || len <= 0)
+        return;
+    janus_videoroom_session *session = (janus_videoroom_session *)handle->plugin_handle;
+    if(!session || session->destroyed || !session->participant || session->participant_type != janus_videoroom_p_type_publisher)
+        return;
+    janus_videoroom_participant *participant = (janus_videoroom_participant *)session->participant;
+    /* Get a string out of the data */
+    char *text = g_malloc0(len+1);
+    memcpy(text, buf, len);
+    *(text+len) = '\0';
+    JANUS_LOG(LOG_VERB, "Got a DataChannel message (%zu bytes) to forward: %s\n", strlen(text), text);
+    g_slist_foreach(participant->listeners, janus_videoroom_relay_data_packet, text);
+    g_free(text);
 }
 
-/* Helper method to handle incoming messages from the data channel */
+/*void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char *text, gboolean internal);
+*//* Helper method to handle incoming messages from the data channel *//*
 void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char *text, gboolean internal) {
     janus_videoroom_session *session = (janus_videoroom_session *)handle->plugin_handle;
+    if(!session || session->destroyed || !session->participant)
+        return;
+
     if(session->participant_type == janus_videoroom_p_type_publisher) {
         janus_videoroom_participant *participant = ( janus_videoroom_participant *) session->participant;
         if(participant && participant->listeners) {
@@ -2188,8 +2192,8 @@ void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char 
         janus_videoroom_listener *current_listener = (janus_videoroom_listener *) session->participant;
         janus_videoroom_participant *participant = (janus_videoroom_participant *)current_listener->feed;
         gateway->relay_data(participant->session->handle, text, strlen(text));
-        /* we need to check if the room still exists, may have been destroyed already */
-        if(participant != NULL && participant->listeners) {
+        *//* we need to check if the room still exists, may have been destroyed already *//*
+        if(participant->room && !participant->room->destroyed && participant != NULL && participant->listeners) {
             GSList *ps = participant->listeners;
             while(ps) {
                 janus_videoroom_listener *l = (janus_videoroom_listener *)ps->data;
@@ -2205,7 +2209,7 @@ void janus_videoroom_handle_incoming_request(janus_plugin_session *handle, char 
         //Not implemented
     }
     g_free(text);
-}
+}*/
 
 void janus_videoroom_slow_link(janus_plugin_session *handle, int uplink, int video) {
 	/* The core is informing us that our peer got too many NACKs, are we pushing media too hard? */
@@ -2341,6 +2345,17 @@ void janus_videoroom_hangup_media(janus_plugin_session *handle) {
 		participant->remb_latest = 0;
 		participant->fir_latest = 0;
 		participant->fir_seq = 0;
+
+        /* Notify all listeners */
+        char request[100];
+        if(participant->listeners) {
+            guint64 room_id = *((guint64 *)list->data);
+
+            g_snprintf(request, sizeof(request), "{\"event\":\"unpublished\",\"room\":%"SCNu64",\"id\":%"SCNu64"}", json_integer(participant->room->room_id),json_integer(participant->user_id));
+            g_slist_foreach(participant->listeners, janus_videoroom_relay_data_packet, request);
+        }
+
+
 		/* Get rid of the recorders, if available */
 		janus_mutex_lock(&participant->rec_mutex);
 		janus_videoroom_recorder_close(participant);
