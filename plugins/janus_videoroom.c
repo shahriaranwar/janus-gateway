@@ -1947,6 +1947,16 @@ void janus_videoroom_setup_media(janus_plugin_session *handle) {
 			json_object_set_new(pub, "publishers", list);
 			GHashTableIter iter;
 			gpointer value;
+
+
+            json_t *reply = json_object();
+            json_object_set_new(reply, "event", json_string("published"));
+            json_object_set_new(reply, "transaction", json_string("internal"));
+            json_object_set_new(reply, "room", json_integer(participant->room->room_id));
+            json_object_set_new(reply, "id", json_integer(participant->user_id));
+            char *reply_text = json_dumps(reply, json_format);
+            json_decref(reply);
+
 			janus_videoroom *videoroom = participant->room;
 			janus_mutex_lock(&videoroom->participants_mutex);
 			g_hash_table_iter_init(&iter, videoroom->participants);
@@ -1957,24 +1967,13 @@ void janus_videoroom_setup_media(janus_plugin_session *handle) {
 				}
 				JANUS_LOG(LOG_VERB, "Notifying participant %"SCNu64" (%s)\n", p->user_id, p->display ? p->display : "??");
 				int ret = gateway->push_event(p->session->handle, &janus_videoroom_plugin, NULL, pub, NULL);
+                gateway->relay_data(session->handle, reply_text, strlen(reply_text));
+
 				JANUS_LOG(LOG_VERB, "  >> %d (%s)\n", ret, janus_get_api_error(ret));
 			}
 			json_decref(pub);
+            free(reply_text);
 			janus_mutex_unlock(&videoroom->participants_mutex);
-
-            /* Notify others */
-            if(participant->listeners && participant->room) {
-                json_t *reply = json_object();
-                json_object_set_new(reply, "event", json_string("published"));
-                json_object_set_new(reply, "transaction", json_string("internal"));
-                json_object_set_new(reply, "room", json_integer(participant->room->room_id));
-                json_object_set_new(reply, "id", json_integer(participant->user_id));
-
-                char *reply_text = json_dumps(reply, json_format);
-                json_decref(reply);
-                g_slist_foreach(participant->listeners, janus_videoroom_relay_data_packet, reply_text);
-                free(reply_text);
-            }
 
 			/* Also notify event handlers */
 			if(notify_events && gateway->events_is_enabled()) {
