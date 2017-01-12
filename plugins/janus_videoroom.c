@@ -2349,10 +2349,7 @@ void janus_videoroom_hangup_media(janus_plugin_session *handle) {
         /* Notify all listeners */
         char request[100];
         if(participant->listeners) {
-            guint64 room_id = *((guint64 *)participant->room->room_id);
-            guint64 user_id = *((guint64 *)participant->user_id);
-
-            g_snprintf(request, sizeof(request), "{\"event\":\"publisher_unpublished\",\"room\":%"SCNu64",\"id\":%"SCNu64"}", room_id,user_id);
+            g_snprintf(request, sizeof(request), "{\"event\":\"publisher_unpublished\"}");
             g_slist_foreach(participant->listeners, janus_videoroom_relay_data_packet, request);
         }
 
