@@ -2317,6 +2317,9 @@ static void janus_videoroom_recorder_close(janus_videoroom_participant *particip
 	participant->vrc = NULL;
 }
 
+/* JSON serialization options */
+static size_t json_format = JSON_INDENT(3) | JSON_PRESERVE_ORDER;
+
 void janus_videoroom_hangup_media(janus_plugin_session *handle) {
 	JANUS_LOG(LOG_INFO, "No WebRTC media anymore\n");
 	if(g_atomic_int_get(&stopping) || !g_atomic_int_get(&initialized))
@@ -2346,11 +2349,18 @@ void janus_videoroom_hangup_media(janus_plugin_session *handle) {
 		participant->fir_latest = 0;
 		participant->fir_seq = 0;
 
-        /* Notify all listeners */
-        char request[100];
         if(participant->listeners && participant->room) {
-            g_snprintf(request, sizeof(request), "{\"event\":\"unpublished\",\"transaction\":\"internal\",\"room\":%"SCNu64"}", participant->room->room_id);
-            g_slist_foreach(participant->listeners, janus_videoroom_relay_data_packet, request);
+            /* Notify others */
+            json_t *reply = json_object();
+            json_object_set_new(reply, "event", json_string("unpublish"));
+            json_object_set_new(reply, "transaction", json_string("internal"));
+            json_object_set_new(reply, "room", json_integer(participant->room->room_id));
+            json_object_set_new(reply, "id", json_integer(participant->user_id));
+
+            char *reply_text = json_dumps(reply, json_format);
+            json_decref(reply);
+            g_slist_foreach(participant->listeners, janus_videoroom_relay_data_packet, reply_text);
+            free(reply_text);
         }
 
 
