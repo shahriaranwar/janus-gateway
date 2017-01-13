@@ -1778,6 +1778,10 @@ struct janus_plugin_result *janus_videoroom_handle_message(janus_plugin_session 
 			json_object_set_new(pl, "id", json_integer(p->user_id));
 			if(p->display)
 				json_object_set_new(pl, "display", json_string(p->display));
+
+
+            JANUS_LOG(LOG_VERB, "Notifying participant ---> %"SCNu64" (%s)\n", p->user_id, p->display ? p->display : "??");
+
 			json_object_set_new(pl, "publisher", (p->sdp && p->session->started) ? json_true() : json_false());
 			if ((p->sdp && p->session->started)) {
 				json_object_set_new(pl, "internal_audio_ssrc", json_integer(p->audio_ssrc));
@@ -1956,9 +1960,9 @@ void janus_videoroom_setup_media(janus_plugin_session *handle) {
 				if(p == participant) {
 					continue;	/* Skip the new publisher itself */
 				}
-				JANUS_LOG(LOG_INFO, "Notifying participant %"SCNu64" (%s)\n", p->user_id, p->display ? p->display : "??");
+				JANUS_LOG(LOG_VERB, "Notifying participant %"SCNu64" (%s)\n", p->user_id, p->display ? p->display : "??");
 				int ret = gateway->push_event(p->session->handle, &janus_videoroom_plugin, NULL, pub, NULL);
-				JANUS_LOG(LOG_INFO, "  >> %d (%s)\n", ret, janus_get_api_error(ret));
+				JANUS_LOG(LOG_VERB, "  >> %d (%s)\n", ret, janus_get_api_error(ret));
 			}
 			json_decref(pub);
 			janus_mutex_unlock(&videoroom->participants_mutex);
