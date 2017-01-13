@@ -1051,8 +1051,8 @@ static void janus_videoroom_leave_or_unpublish(janus_videoroom_participant *part
 		json_object_set_new(event, "room", json_integer(participant->room->room_id));
 		json_object_set_new(event, is_leaving ? "leaving" : "unpublished", json_integer(participant->user_id));
 		janus_mutex_lock(&participant->room->participants_mutex);
-		(participant, event);
-		if(is_leaving) {janus_videoroom_notify_participants
+		janus_videoroom_notify_participants(participant, event);
+		if(is_leaving) {
 			g_hash_table_remove(participant->room->participants, &participant->user_id);
 		}
 		janus_mutex_unlock(&participant->room->participants_mutex);
