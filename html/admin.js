@@ -5,10 +5,13 @@
 // paths and the like.
 //
 var server = null;
+/*
 if(window.location.protocol === 'http:')
 	server = "http://" + window.location.hostname + ":7088/admin";
 else
-	server = "https://" + window.location.hostname + ":7889/admin";
+*/
+
+server = "https://mcu4.augmedix.com:9005/admin";
 var secret = "janusoverlord";	// This is what you configured in janus.cfg
 
 var session = null;		// Selected session

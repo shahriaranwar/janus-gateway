@@ -1051,8 +1051,8 @@ static void janus_videoroom_leave_or_unpublish(janus_videoroom_participant *part
 		json_object_set_new(event, "room", json_integer(participant->room->room_id));
 		json_object_set_new(event, is_leaving ? "leaving" : "unpublished", json_integer(participant->user_id));
 		janus_mutex_lock(&participant->room->participants_mutex);
-		janus_videoroom_notify_participants(participant, event);
-		if(is_leaving) {
+		(participant, event);
+		if(is_leaving) {janus_videoroom_notify_participants
 			g_hash_table_remove(participant->room->participants, &participant->user_id);
 		}
 		janus_mutex_unlock(&participant->room->participants_mutex);
@@ -1948,15 +1948,6 @@ void janus_videoroom_setup_media(janus_plugin_session *handle) {
 			GHashTableIter iter;
 			gpointer value;
 
-
-            json_t *reply = json_object();
-            json_object_set_new(reply, "event", json_string("published"));
-            json_object_set_new(reply, "transaction", json_string("internal"));
-            json_object_set_new(reply, "room", json_integer(participant->room->room_id));
-            json_object_set_new(reply, "id", json_integer(participant->user_id));
-            char *reply_text = json_dumps(reply, json_format);
-            json_decref(reply);
-
 			janus_videoroom *videoroom = participant->room;
 			janus_mutex_lock(&videoroom->participants_mutex);
 			g_hash_table_iter_init(&iter, videoroom->participants);
@@ -1965,14 +1956,11 @@ void janus_videoroom_setup_media(janus_plugin_session *handle) {
 				if(p == participant) {
 					continue;	/* Skip the new publisher itself */
 				}
-				JANUS_LOG(LOG_VERB, "Notifying participant %"SCNu64" (%s)\n", p->user_id, p->display ? p->display : "??");
+				JANUS_LOG(LOG_INFO, "Notifying participant %"SCNu64" (%s)\n", p->user_id, p->display ? p->display : "??");
 				int ret = gateway->push_event(p->session->handle, &janus_videoroom_plugin, NULL, pub, NULL);
-                gateway->relay_data(session->handle, reply_text, strlen(reply_text));
-
-				JANUS_LOG(LOG_VERB, "  >> %d (%s)\n", ret, janus_get_api_error(ret));
+				JANUS_LOG(LOG_INFO, "  >> %d (%s)\n", ret, janus_get_api_error(ret));
 			}
 			json_decref(pub);
-            free(reply_text);
 			janus_mutex_unlock(&videoroom->participants_mutex);
 
 			/* Also notify event handlers */
@@ -1983,6 +1971,9 @@ void janus_videoroom_setup_media(janus_plugin_session *handle) {
 				json_object_set_new(info, "id", json_integer(participant->user_id));
 				gateway->notify_event(&janus_videoroom_plugin, session->handle, info);
 			}
+
+            //notify all in this room
+
 		} else if(session->participant_type == janus_videoroom_p_type_subscriber) {
 			janus_videoroom_listener *l = (janus_videoroom_listener *)session->participant;
 			if(l && l->feed) {
