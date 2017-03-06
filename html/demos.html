@@ -5,9 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <title>Janus WebRTC Gateway: Demo Tests</title>
-<script type="text/javascript" src="jquery.min.js" ></script>
-<script type="text/javascript" src="js/bootstrap.js"></script>
-<link rel="stylesheet" href="css/cerulean/bootstrap.css" type="text/css"/>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.7.2/jquery.min.js" ></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.2/js/bootstrap.min.js"></script>
+<script>
+	$(function() {
+		$(".navbar-static-top").load("navbar.html", function() {
+			$(".navbar-static-top li.dropdown").addClass("active");
+			$(".navbar-static-top a[href='demos.html']").parent().addClass("active");
+		});
+		$(".footer").load("footer.html");
+	});
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cerulean/bootstrap.min.css" type="text/css"/>
 <link rel="stylesheet" href="css/demo.css" type="text/css"/>
 </head>
 <body>
@@ -15,46 +24,6 @@
 <a href="https://github.com/meetecho/janus-gateway"><img style="position: absolute; top: 0; left: 0; border: 0; z-index: 1001;" src="https://s3.amazonaws.com/github/ribbons/forkme_left_darkblue_121621.png" alt="Fork me on GitHub"></a>
 
 <nav class="navbar navbar-default navbar-static-top">
-<div class="container">
-	<div class="navbar-header">
-		<a class="navbar-brand" href=".">Janus</a>
-		<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-		</button>
-	</div>
-	<div class="navbar-collapse collapse">
-		<ul class="nav navbar-nav">
-			<li><a href="index.html">Home</a></li>
-			<li class="dropdown active"><a href="#" class="dropdown-toggle" data-toggle="dropdown">Demos <b class="caret"></b></a>
-				<ul class="dropdown-menu">
-					<li class="active"><a href="demos.html">Index</a></li>
-					<li class="divider"></li>
-					<li><a href="echotest.html">Echo Test</a></li>
-					<li><a href="streamingtest.html">Streaming</a></li>
-					<li><a href="videocalltest.html">Video Call</a></li>
-					<li><a href="siptest.html">SIP Gateway</a></li>
-					<li><a href="videoroomtest.html">Video Room</a></li>
-					<li><a href="audiobridgetest.html">Audio Room</a></li>
-					<li><a href="voicemailtest.html">Voice Mail</a></li>
-					<li><a href="recordplaytest.html">Recorder/Playout</a></li>
-					<li><a href="screensharingtest.html">Screen Sharing</a></li>
-					<li class="divider"></li>
-					<li><a href="admin.html">Admin/Monitor</a></li>
-				</ul>
-			</li>
-			<li><a href="docs">Documentation</a></li>
-			<li><a href="citeus.html">Cite us!</a></li>
-		</ul>
-		<div class="navbar-header navbar-right">
-			<ul class="nav navbar-nav">
-				<li><a href="http://groups.google.com/d/forum/meetecho-janus" class="navbar-link"><b>Discuss Janus</b></a></li>
-				<li><a href="http://www.meetecho.com" class="navbar-link"><img src="meetecho-logo-white.png"/> <b>Meetecho</b></a></li>
-			</ul>
-		</div>
-	</div>
-</div>
 </nav>
 
 <div class="container">
@@ -92,14 +61,18 @@
 					<td>An audio mixing/bridge demo, allowing you join an Audio Room room.</td>
 				</tr>
 				<tr class="active">
+					<td><a href="textroomtest.html">Text Room</a></td>
+					<td>A text room demo, using DataChannels only.</td>
+				</tr>
+				<tr>
 					<td><a href="voicemailtest.html">Voice Mail</a></td>
 					<td>A simple audio recorder demo, returning an .opus file after 10 seconds.</td>
 				</tr>
-				<tr>
+				<tr class="active">
 					<td><a href="recordplaytest.html">Recorder/Playout</a></td>
 					<td>A demo to record audio/video messages, and subsequently replay them through WebRTC.</td>
 				</tr>
-				<tr class="active">
+				<tr>
 					<td><a href="screensharingtest.html">Screen Sharing</a></td>
 					<td>A webinar-like screen sharing session, based on the Video Room plugin.</td>
 				</tr>
@@ -109,6 +82,10 @@
 					<td colspan=2><h3>Other demos</h3></td>
 				</tr>
 				<tr class="active">
+					<td><a href="devicetest.html">Device Selection</a></td>
+					<td>A variant of the Echo Test demo, that allows you to choose a specific capture device.</td>
+				</tr>
+				<tr>
 					<td><a href="admin.html">Admin/Monitor</a></td>
 					<td>A simple page showcasing how you can use the Janus Admin/Monitor API.</td>
 				</tr>
@@ -118,7 +95,6 @@
 
 	<hr>
 	<div class="footer">
-	<p>Janus WebRTC Gateway &copy; <a href="http://www.meetecho.com">Meetecho</a> 2015</p>
 	</div>
 </div>
 </body>
