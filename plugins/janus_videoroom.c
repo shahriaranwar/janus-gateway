@@ -2434,34 +2434,63 @@ void janus_videoroom_incoming_data(janus_plugin_session *handle, char *buf, int 
 	if(buf == NULL || len <= 0)
 		return;
 	janus_videoroom_session *session = (janus_videoroom_session *)handle->plugin_handle;
-	if(!session || session->destroyed || !session->participant || session->participant_type != janus_videoroom_p_type_publisher)
+	if(!session || session->destroyed || !session->participant)
 		return;
-	janus_videoroom_participant *participant = (janus_videoroom_participant *)session->participant;
-	if(!participant->data_active)
-		return;
-	/* Any forwarder involved? */
-	janus_mutex_lock(&participant->rtp_forwarders_mutex);
-	/* Forward RTP to the appropriate port for the rtp_forwarders associated with this publisher, if there are any */
-	GHashTableIter iter;
-	gpointer value;
-	g_hash_table_iter_init(&iter, participant->rtp_forwarders);
-	while(participant->udp_sock > 0 && g_hash_table_iter_next(&iter, NULL, &value)) {
-		janus_videoroom_rtp_forwarder* rtp_forward = (janus_videoroom_rtp_forwarder*)value;
-		if(rtp_forward->is_data) {
-			sendto(participant->udp_sock, buf, len, 0, (struct sockaddr*)&rtp_forward->serv_addr, sizeof(rtp_forward->serv_addr));
-		}
-	}
-	janus_mutex_unlock(&participant->rtp_forwarders_mutex);
-	/* Get a string out of the data */
-	char *text = g_malloc0(len+1);
-	memcpy(text, buf, len);
-	*(text+len) = '\0';
-	JANUS_LOG(LOG_VERB, "Got a DataChannel message (%zu bytes) to forward: %s\n", strlen(text), text);
-	/* Save the message if we're recording */
-	janus_recorder_save_frame(participant->drc, text, strlen(text));
-	/* Relay to all listeners */
-	g_slist_foreach(participant->listeners, janus_videoroom_relay_data_packet, text);
-	g_free(text);
+
+    if(session->participant_type == janus_videoroom_p_type_publisher) {
+        janus_videoroom_participant *participant = (janus_videoroom_participant *) session->participant;
+        if (!participant->data_active)
+            return;
+        /* Any forwarder involved? */
+        janus_mutex_lock(&participant->rtp_forwarders_mutex);
+        /* Forward RTP to the appropriate port for the rtp_forwarders associated with this publisher, if there are any */
+        GHashTableIter iter;
+        gpointer value;
+        g_hash_table_iter_init(&iter, participant->rtp_forwarders);
+        while (participant->udp_sock > 0 && g_hash_table_iter_next(&iter, NULL, &value)) {
+            janus_videoroom_rtp_forwarder *rtp_forward = (janus_videoroom_rtp_forwarder *) value;
+            if (rtp_forward->is_data) {
+                sendto(participant->udp_sock, buf, len, 0, (struct sockaddr *) &rtp_forward->serv_addr,
+                       sizeof(rtp_forward->serv_addr));
+            }
+        }
+        janus_mutex_unlock(&participant->rtp_forwarders_mutex);
+        /* Get a string out of the data */
+        char *text = g_malloc0(len + 1);
+        memcpy(text, buf, len);
+        *(text + len) = '\0';
+        JANUS_LOG(LOG_VERB, "Got a DataChannel message (%zu bytes) to forward: %s\n", strlen(text), text);
+        /* Save the message if we're recording */
+        janus_recorder_save_frame(participant->drc, text, strlen(text));
+        /* Relay to all listeners */
+        g_slist_foreach(participant->listeners, janus_videoroom_relay_data_packet, text);
+        g_free(text);
+    } else if(session->participant_type == janus_videoroom_p_type_subscriber) {
+        /* Get a string out of the data */
+        char *text = g_malloc0(len + 1);
+        memcpy(text, buf, len);
+        *(text + len) = '\0';
+        JANUS_LOG(LOG_VERB, "Got a DataChannel message (%zu bytes) to forward: %s\n", strlen(text), text);
+        janus_videoroom_listener *current_listener = (janus_videoroom_listener *) session->participant;
+        janus_videoroom_participant *participant = (janus_videoroom_participant *)current_listener->feed;
+        if(participant && participant->session && participant->session->handle) {
+            gateway->relay_data(participant->session->handle, text, strlen(text));
+        }
+        /* we need to check if the room still exists, may have been destroyed already */
+        if(participant && participant->listeners) {
+            GSList *ps = participant->listeners;
+            while(ps) {
+                janus_videoroom_listener *l = (janus_videoroom_listener *)ps->data;
+                if(l && l->session && current_listener->session && l->session != current_listener->session){
+                    if(l->session->started && l->session->handle) {
+                        gateway->relay_data(l->session->handle, text, strlen(text));
+                    }
+                }
+                ps = ps->next;
+            }
+        }
+        g_free(text);
+    }
 }
 
 void janus_videoroom_slow_link(janus_plugin_session *handle, int uplink, int video) {
