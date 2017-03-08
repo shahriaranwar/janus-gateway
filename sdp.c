@@ -866,20 +866,12 @@ char *janus_sdp_merge(void *ice_handle, janus_sdp *anon) {
 			a = janus_sdp_attribute_create("mid", "%s", handle->video_mid ? handle->video_mid : "video");
 			m->attributes = g_list_insert_before(m->attributes, first, a);
 #ifdef HAVE_SCTP
-<<<<<<< HEAD
-				case sdp_media_application:
-					/* FIXME sctpmap and webrtc-datachannel should be dynamic */
-					g_snprintf(buffer, 512, "a=mid:%s\r\na=sctpmap:5000 webrtc-datachannel 1024\r\n",
-						handle->data_mid ? handle->data_mid : "data");
-					break;
-=======
 		} else if(m->type == JANUS_SDP_APPLICATION) {
 			/* FIXME sctpmap and webrtc-datachannel should be dynamic */
-			a = janus_sdp_attribute_create("sctpmap", "5000 webrtc-datachannel 16");
+			a = janus_sdp_attribute_create("sctpmap", "5000 webrtc-datachannel 1024");
 			m->attributes = g_list_insert_before(m->attributes, first, a);
 			a = janus_sdp_attribute_create("mid", "%s", handle->data_mid ? handle->data_mid : "data");
 			m->attributes = g_list_insert_before(m->attributes, first, a);
->>>>>>> datachannel
 #endif
 		}
 		if(m->type == JANUS_SDP_AUDIO || m->type == JANUS_SDP_VIDEO) {
