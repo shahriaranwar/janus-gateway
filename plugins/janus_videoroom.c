@@ -2496,7 +2496,6 @@ void janus_videoroom_incoming_data(janus_plugin_session *handle, char *buf, int 
         }
         g_free(text);
     }
->>>>>>> datachannel
 }
 
 void janus_videoroom_slow_link(janus_plugin_session *handle, int uplink, int video) {
