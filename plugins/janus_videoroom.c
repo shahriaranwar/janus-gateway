@@ -1997,7 +1997,67 @@ struct janus_plugin_result *janus_videoroom_handle_message(janus_plugin_session 
 		janus_mutex_unlock(&videoroom->participants_mutex);
 		janus_mutex_unlock(&rooms_mutex);
 		goto plugin_response;
-	} else if(!strcasecmp(request_text, "listparticipants")) {
+	} else if(!strcasecmp(request_text, "listplusplus")) {
+        /* List all rooms (but private ones) and their details (except for the secret, of course...) */
+        json_t *list = json_array();
+        JANUS_LOG(LOG_VERB, "Getting the list of video rooms, and all participant in each room\n");
+        janus_mutex_lock(&rooms_mutex);
+        GHashTableIter iter;
+        gpointer value;
+        g_hash_table_iter_init(&iter, rooms);
+        while(g_hash_table_iter_next(&iter, NULL, &value)) {
+            janus_videoroom *room = value;
+            if(!room)
+                continue;
+            if(room->is_private) {
+                /* Skip private room */
+                JANUS_LOG(LOG_VERB, "Skipping private room '%s'\n", room->room_name);
+                continue;
+            }
+            if(!room->destroyed) {
+                json_t *rl = json_object();
+                json_object_set_new(rl, "room", json_integer(room->room_id));
+                json_object_set_new(rl, "description", json_string(room->room_name));
+                json_object_set_new(rl, "max_publishers", json_integer(room->max_publishers));
+                json_object_set_new(rl, "num_participants", json_integer(g_hash_table_size(room->participants)));
+                json_object_set_new(rl, "bitrate", json_integer(room->bitrate));
+                json_object_set_new(rl, "fir_freq", json_integer(room->fir_freq));
+                json_object_set_new(rl, "audiocodec", json_string(janus_videoroom_audiocodec_name(room->acodec)));
+                json_object_set_new(rl, "videocodec", json_string(janus_videoroom_videocodec_name(room->vcodec)));
+                json_object_set_new(rl, "record", room->record ? json_true() : json_false());
+                json_object_set_new(rl, "rec_dir", json_string(room->rec_dir));
+
+                /* Return a list of all participants (whether they're publishing or not) */
+                json_t *participants_list = json_array();
+                GHashTableIter participant_iter;
+                gpointer participant_value;
+                janus_mutex_lock(&room->participants_mutex);
+
+                g_hash_table_iter_init(&participant_iter, room->participants);
+                while (!room->destroyed && g_hash_table_iter_next(&participant_iter, NULL, &participant_value)) {
+                    janus_videoroom_participant *p = participant_value;
+                    json_t *pl = json_object();
+                    json_object_set_new(pl, "id", json_integer(p->user_id));
+                    if(p->display)
+                        json_object_set_new(pl, "display", json_string(p->display));
+                    json_object_set_new(pl, "publisher", (p->sdp && p->session->started) ? json_true() : json_false());
+                    if ((p->sdp && p->session->started)) {
+                        json_object_set_new(pl, "internal_audio_ssrc", json_integer(p->audio_ssrc));
+                        json_object_set_new(pl, "internal_video_ssrc", json_integer(p->video_ssrc));
+                    }
+                    json_array_append_new(participants_list, pl);
+                }
+                janus_mutex_unlock(&room->participants_mutex);
+                json_object_set_new(rl, "participant_list", participants_list);
+                json_array_append_new(list, rl);
+            }
+        }
+        janus_mutex_unlock(&rooms_mutex);
+        response = json_object();
+        json_object_set_new(response, "videoroom", json_string("success"));
+        json_object_set_new(response, "list", list);
+        goto plugin_response;
+    } else if(!strcasecmp(request_text, "listparticipants")) {
 		/* List all participants in a room, specifying whether they're publishers or just attendees */	
 		JANUS_VALIDATE_JSON_OBJECT(root, room_parameters,
 			error_code, error_cause, TRUE,
